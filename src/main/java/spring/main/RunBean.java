@@ -15,7 +15,7 @@ public class RunBean {
 	private static ApplicationContext ctx;
 
 	static {
-		ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
+		ctx = new ClassPathXmlApplicationContext("config/applicationContext.xml");
 	}
 
 	/**
