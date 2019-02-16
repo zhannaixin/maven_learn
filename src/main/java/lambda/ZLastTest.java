@@ -18,6 +18,7 @@ public class ZLastTest {
         Map<String, String> stringMap = Stream.of(queryString.split("&")).map(str -> str.split("=")).collect(Collectors.toMap(s -> s[0], s -> s[1]));
         System.out.println(stringMap);
     }
+
     @Test
     public void test2(){
 //        (new ZLastTest.Book()).books().stream().map(Book::getId).forEach(System.out::println);
