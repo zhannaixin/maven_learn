@@ -1,0 +1,427 @@
+15.27. Lambda Expressions
+
+A lambda expression is like a method: it provides a list of formalparameters and a body - an expression or block - expressed in terms ofthose parameters.
+
+
+
+LambdaExpression:
+
+LambdaParameters -> LambdaBody
+
+Lambda expressions are always poly expressions (§15.2).
+
+It is a compile-time error if a lambda expression occurs in a programin someplace other than an assignment context(§5.2), an invocation context(§5.3), or a casting context(§5.5).
+
+Evaluation of a lambda expression produces an instance of a functionalinterface (§9.8). Lambda expression evaluationdoes not cause the execution of the expression'sbody; instead, this may occur at a later time when an appropriatemethod of the functional interface is invoked.
+
+
+Here are some examples of lambda expressions:
+
+() -> {}                // No parameters; result is void
+() -> 42                // No parameters, expression body
+() -> null              // No parameters, expression body
+() -> { return 42; }    // No parameters, block body with return
+() -> { System.gc(); }  // No parameters, void block body
+
+() -> {                 // Complex block body with returns
+  if (true) return 12;
+  else {
+    int result = 15;
+    for (int i = 1; i < 10; i++)
+      result *= i;
+    return result;
+  }
+}
+
+(int x) -> x+1              // Single declared-type parameter
+(int x) -> { return x+1; }  // Single declared-type parameter
+(x) -> x+1                  // Single inferred-type parameter
+x -> x+1                    // Parentheses optional for
+                            // single inferred-type parameter
+
+(String s) -> s.length()      // Single declared-type parameter
+(Thread t) -> { t.start(); }  // Single declared-type parameter
+s -> s.length()               // Single inferred-type parameter
+t -> { t.start(); }           // Single inferred-type parameter
+
+(int x, int y) -> x+y  // Multiple declared-type parameters
+(x, y) -> x+y          // Multiple inferred-type parameters
+(x, int y) -> x+y    // Illegal: can't mix inferred and declared types
+(x, final y) -> x+y  // Illegal: no modifiers with inferred types
+
+
+
+This syntax has the advantage of minimizing bracketnoise around simple lambda expressions, which is especially beneficialwhen a lambda expression is an argument to a method, or when the bodyis another lambda expression. It also clearly distinguishes betweenits expression and statement forms, which avoids ambiguities orover-reliance on ';' tokens. When some extra bracketing is neededto visually distinguish either the full lambda expression or its bodyexpression, parentheses are naturally supported (just as in othercases in which operator precedence is unclear).
+
+The syntax has some parsing challenges. The Java programming language hasalways required arbitrary lookahead todistinguish between types and expressions after a '(' token:what follows may be a cast or a parenthesized expression. This wasmade worse when generics reused the binary operators '<' and'>' in types. Lambda expressions introduce a new possibility:the tokens following '(' may describe a type, an expression, ora lambda parameter list. Some tokens immediately indicate a parameterlist (annotations, final); in other cases there are certain patternsthat must be interpreted as parameter lists (two names in a row, a',' not nested inside of '<' and '>'); andsometimes, the decision cannot bemade until a '->' is encountered after a ')'. The simplestway to think of how this might be efficiently parsed is with a statemachine: each state represents a subset of possible interpretations(type, expression, or parameters), and when the machine transitions toa state in which the set is a singleton, the parser knows which caseit is. This does not map very elegantly to a fixed-lookahead grammar,however.
+
+There is no special nullary form: a lambdaexpression with zero arguments is expressed as () ->.... The obvious special-case syntax, ->..., does not work because it introduces an ambiguitybetween argument lists and casts: (x) ->....
+
+Lambda expressions cannot declare type parameters.While it would make sense semantically to do so, the natural syntax(preceding the parameter list with a type parameter list) introducesmessy ambiguities. For example, consider:
+foo( (x) < y , z > (w) -> v )
+
+This could be an invocationof foo with one argument (a generic lambda cast totype x), or it could be an invocationof foo with two arguments, both the results ofcomparisons, the second comparing z with a lambdaexpression. (Strictly speaking, a lambda expression is meaningless asan operand to the relational operator >, but that is atenuous assumption on which to build the grammar.)
+
+There is a precedent for ambiguity resolutioninvolving casts, which essentially prohibits the use of - and + following a non-primitive cast (§15.15),but to extend that approach to generic lambdas would involve invasivechanges to the grammar.
+
+
+
+
+
+15.27.1. Lambda Parameters
+
+The formal parameters of a lambda expression, if any, are specified byeither a parenthesized list of comma-separated parameter specifiers ora parenthesized list of comma-separated identifiers. In a list ofparameter specifiers, each parameter specifier consists of optionalmodifiers, then a type (or var), then an identifier that specifiesthe name of the parameter. In a list of identifiers, each identifierspecifies the name of the parameter.
+
+If a lambda expression has no formal parameters, then an empty pair ofparentheses appears before the -> and the lambda body.
+
+If a lambda expression has exactly one formal parameter, and theparameter is specified by an identifier instead of a parameterspecifier, then the parentheses around the identifier may be elided.
+
+
+
+LambdaParameters:
+
+( [LambdaParameterList] )
+Identifier
+
+
+LambdaParameterList:
+
+LambdaParameter {, LambdaParameter}
+Identifier {, Identifier}
+
+
+LambdaParameter:
+
+{VariableModifier} LambdaParameterType VariableDeclaratorId
+VariableArityParameter
+
+
+LambdaParameterType:
+
+UnannType
+var
+
+The following productions from §8.4.1, §8.3, and §4.3 are shown here for convenience:
+
+
+
+
+VariableArityParameter:
+
+{VariableModifier} UnannType {Annotation} ... Identifier
+
+
+
+VariableModifier:
+
+Annotation
+final
+
+
+
+VariableDeclaratorId:
+
+Identifier [Dims]
+
+
+
+Dims:
+
+{Annotation} [ ] {{Annotation} [ ]}
+
+A formal parameter of a lambda expression may be declared final, orannotated, only if specified by a parameter specifier. If a formalparameter is specified by an identifier instead, then the formalparameter is not final and has no annotations.
+
+A formal parameter of a lambda expression may be a variablearity parameter, indicated by an ellipsis following thetype in a parameter specifier. At most one variable arity parameteris permitted for a lambda expression. It is a compile-time error if avariable arity parameter appears anywhere in the list of parameterspecifiers except the last position.
+
+Each formal parameter of a lambda expression has either an inferred type or a declared type:
+
+
+•If a formal parameter is specified either by a parameterspecifier that uses var, or by an identifier instead of aparameter specifier, then the formal parameter has an inferredtype. The type is inferred from the functional interface typetargeted by the lambda expression (§15.27.3).
+
+
+•If a formal parameter is specified by a parameter specifier that doesnot use var, then the formal parameter has a declared type. Thedeclared type is determined as follows:
+
+
+◦If the formal parameter is not a variable arity parameter, thenthe declared type is denoted by UnannTypeif no bracket pairs appear in UnannTypeand VariableDeclaratorId, and specified by §10.2 otherwise.
+
+
+◦If the formal parameter is a variable arity parameter, thenthe declared type is an array type specified by §10.2.
+
+
+
+No distinction is made between the following lambdaparameter lists:
+(int... x) -> BODY
+(int[] x) -> BODY
+
+
+Either can be used, whether the functionalinterface's abstract method is fixed arity or variable arity. (This isconsistent with the rules for method overriding.) Since lambdaexpressions are never directly invoked, using int... for the formal parameter where the functional interfaceuses int[] can have no impact on the surroundingprogram. In a lambda body, a variable arity parameter is treated justlike an array-typed parameter.
+
+A lambda expression where all the formal parameters have declaredtypes is said to be explicitly typed. A lambdaexpression where all the formal parameters have inferred types is saidto be implicitly typed. A lambda expression withno formal parameters is explicitly typed.
+
+If a lambda expression is implicitly typed, then itslambda body is interpreted according to the context in which itappears. Specifically, the types of expressions in the body, and thechecked exceptions thrown by the body, and the type correctness ofcode in the body all depend on the types inferred for the formalparameters. This implies that inference of formal parameter types mustoccur "before" attempting to type-check the lambda body.
+
+It is a compile-time error if a lambda expression declares a formalparameter with a declared type and a formalparameter with an inferred type.
+
+This rule prevents a mix of inferred and declared types in the formalparameters, such as (x, int y) -> BODYor (var x, int y) -> BODY. Note that if all theformal parameters have inferred types, the grammar prevents a mix ofidentifiers and var parameter specifiers, such as (x, vary) -> BODY or (var x, y) -> BODY.
+
+The rules for annotation modifiers on a formal parameter declarationare specified in §9.7.4 and §9.7.5.
+
+It is a compile-time error if final appears more than once as amodifier for a formal parameter declaration.
+
+It is a compile-time error if the LambdaParameterType of a formal parameter is var and the VariableDeclaratorId of the same formal parameter has one or more bracket pairs.
+
+The scope and shadowing of a formal parameter declaration is specifiedin §6.3 and §6.4.
+
+It is a compile-time error for a lambda expression to declare twoformal parameters with the same name. (That is, their declarationsmention the same Identifier.)
+
+In Java SE 8, the use of _ as the name of a lambdaparameter was forbidden, and its use discouraged as the name for otherkinds of variable (§4.12.3). As of Java SE 9, _ is a keyword (§3.9) so it cannot beused as a variable name in any context.
+
+It is a compile-time error if a formal parameter that is declared final is assigned to within the body of the lambda expression.
+
+When the lambda expression is invoked (via a method invocationexpression (§15.12)), the values of the actualargument expressions initialize newly created parameter variables,each of the declared or inferred type, before execution of the lambdabody. The Identifier that appears in the LambdaParameter or directly in the LambdaParameterList or LambdaParameters may be used as a simple namein the lambda body to refer to the formal parameter.
+
+A lambda expression's formal parameter of type float always containsan element of the float value set (§4.2.3);similarly, a lambda expression's formal parameter of type doublealways contains an element of the double value set. It is notpermitted for a lambda expression's formal parameter of type floatto contain an element of the float-extended-exponent value set that isnot also an element of the float value set, nor for a lambdaexpression's formal parameter of type double to contain an elementof the double-extended-exponent value set that is not also an elementof the double value set.
+
+
+
+
+
+15.27.2. Lambda Body
+
+A lambdabody is either a single expression or a block(§14.2). Like a method body, a lambda bodydescribes code that will be executed whenever an invocationoccurs.
+
+
+
+LambdaBody:
+
+Expression
+Block
+
+Unlikecode appearing in anonymous class declarations, the meaning of namesand the this and super keywords appearing in a lambda body, alongwith the accessibility of referenced declarations, are the same as inthe surrounding context (except that lambda parameters introduce newnames).
+
+The transparency of this (both explicit andimplicit) in the body of a lambda expression - that is, treating itthe same as in the surrounding context - allows more flexibility forimplementations, and prevents the meaning of unqualified names in thebody from being dependent on overload resolution.
+
+Practically speaking, it is unusual for a lambdaexpression to need to talk about itself (either to call itselfrecursively or to invoke its other methods), while it is more commonto want to use names to refer to things in the enclosing class thatwould otherwise be shadowed (this, toString()).If it is necessary for a lambda expression to refer to itself (as ifvia this), a method reference or an anonymous inner class should beused instead.
+
+A blocklambda body is void-compatible if every returnstatement in the block has the form return;.
+
+A blocklambda body is value-compatible if it cannotcomplete normally (§14.21) and every returnstatement in the block has the form return Expression;.
+
+It is acompile-time error if a block lambda body is neither void-compatiblenor value-compatible.
+
+In avalue-compatible block lambda body, the resultexpressions are any expressions that may produce aninvocation's value. Specifically, for each statement of the form return Expression ; contained by the body, the Expressionis a result expression.
+
+
+The following lambda bodies arevoid-compatible:
+() -> {}
+() -> { System.out.println("done"); }
+
+
+These are value-compatible:
+() -> { return "done"; }
+() -> { if (...) return 1; else return 0; }
+
+
+These are both:
+() -> { throw new RuntimeException(); }
+() -> { while (true); }
+
+
+This is neither:
+() -> { if (...) return "done"; System.out.println("done"); }
+
+
+The handling of void/value-compatible and themeaning of names in the body jointly serve to minimize the dependencyon a particular target type in the given context, which is useful bothfor implementations and for programmer comprehension. Whileexpressions can be assigned different types during overload resolutiondepending on the target type, the meaning of unqualified names and thebasic structure of the lambda body do not change.
+
+Note that the void/value-compatible definition isnot a strictly structural property: "can complete normally" depends onthe values of constant expressions, and these may include names thatreference constant variables.
+
+Any localvariable, formal parameter, or exception parameter used but notdeclared in a lambda expression must either be declared final or beeffectively final (§4.12.4), or a compile-timeerror occurs where the use is attempted.
+
+Any localvariable used but not declared in a lambda body must be definitelyassigned (§16 (Definite Assignment)) before the lambda body, or acompile-time error occurs.
+
+Similar rules on variable use apply in the body ofan inner class (§8.1.3). The restriction toeffectively final variables prohibits access to dynamically-changinglocal variables, whose capture would likely introduce concurrencyproblems. Compared to the final restriction, it reduces the clericalburden on programmers.
+
+The restriction to effectively final variablesincludes standard loop variables, but not enhanced-for loopvariables, which are treated as distinct for each iteration of theloop (§14.14.2).
+
+
+The following lambda bodies demonstrate use ofeffectively final variables.
+
+void m1(int x) {
+    int y = 1;
+    foo(() -> x+y);
+    // Legal: x and y are both effectively final.
+}
+
+void m2(int x) {
+    int y;
+    y = 1;
+    foo(() -> x+y);
+    // Legal: x and y are both effectively final.
+}
+
+void m3(int x) {
+    int y;
+    if (...) y = 1;
+    foo(() -> x+y);
+    // Illegal: y is effectively final, but not definitely assigned.
+}
+
+void m4(int x) {
+    int y;
+    if (...) y = 1; else y = 2;
+    foo(() -> x+y);
+    // Legal: x and y are both effectively final.
+}
+
+
+
+void m5(int x) {
+    int y;
+    if (...) y = 1;
+    y = 2;
+    foo(() -> x+y);
+    // Illegal: y is not effectively final.
+}
+
+void m6(int x) {
+    foo(() -> x+1);
+    x++;
+    // Illegal: x is not effectively final.
+}
+
+void m7(int x) {
+    foo(() -> x=1);
+    // Illegal: x is not effectively final.
+}
+
+void m8() {
+    int y;
+    foo(() -> y=1);
+    // Illegal: y is not definitely assigned before the lambda.
+}
+
+void m9(String[] arr) {
+    for (String s : arr) {
+        foo(() -> s);
+        // Legal: s is effectively final
+        // (it is a new variable on each iteration)
+    }
+}
+
+void m10(String[] arr) {
+    for (int i = 0; i < arr.length; i++) {
+        foo(() -> arr[i]);
+        // Illegal: i is not effectively final
+        // (it is not final, and is incremented)
+    }
+}
+
+
+
+
+
+
+
+15.27.3. Type of a Lambda Expression
+
+A lambda expression is compatible in an assignment context, invocationcontext, or casting context with a target type T if T is afunctional interface type (§9.8) and theexpression is congruent with the function type ofthe ground target type derived from T.
+
+The ground target type is derived from T asfollows:
+
+
+•If T is a wildcard-parameterized functional interface type andthe lambda expression is explicitly typed, then the groundtarget type is inferred as described in §18.5.3.
+
+
+•If T is a wildcard-parameterized functional interface type andthe lambda expression is implicitly typed, then the groundtarget type is the non-wildcard parameterization(§9.9) of T.
+
+
+•Otherwise, the ground target type is T.
+
+
+A lambda expression is congruent with a functiontype if all of the following are true:
+
+
+•The function type has no type parameters.
+
+
+•The number of lambda parameters is the same as the number ofparameter types of the function type.
+
+
+•If the lambda expression is explicitly typed, its formalparameter types are the same as the parameter types of thefunction type.
+
+
+•If the lambda parameters are assumed to have the same types asthe function type's parameter types, then:
+
+
+◦If the function type's result is void, the lambda body iseither a statement expression (§14.8)or a void-compatible block.
+
+
+◦If the function type's result is a (non-void) type R,then either (i) the lambda body is an expression that iscompatible with R in an assignment context, or (ii) thelambda body is a value-compatible block, and each resultexpression (§15.27.2) is compatiblewith R in an assignment context.
+
+
+
+If a lambda expression is compatible with a target type T, then thetype of the expression, U, is the ground target type derived from T.
+
+It is a compile-time error if any class or interface mentioned byeither U or the function type of U is not accessible(§6.6) from the class or interface in which thelambda expression appears.
+
+For each non-static member method m of U, if the function typeof U has a subsignature of the signature of m, then a notionalmethod whose method type is the function type of U is deemed tooverride m, and any compile-time error or unchecked warningspecified in §8.4.8.3 may occur.
+
+A checked exception that can be thrown in the body of the lambdaexpression may cause a compile-time error, as specified in §11.2.3.
+
+The parameter types of explicitly typed lambdas arerequired to exactly match those of the function type. While it wouldbe possible to be more flexible - allow boxing or contravariance, forexample - this kind of generality seems unnecessary, and isinconsistent with the way overriding works in class declarations. Aprogrammer ought to know exactly what function type is being targetedwhen writing a lambda expression, so he should thus know exactly whatsignature must be overridden. (In contrast, this is not the case formethod references, and so more flexibility is allowed when they areused.) In addition, more flexibility with parameter types would addto the complexity of type inference and overload resolution.
+
+Note that while boxing is not allowed in a strictinvocation context, boxing of lambda result expressionsis always allowed - that is, the resultexpression appears in an assignment context, regardless of the contextenclosing the lambda expression. However, if an explicitly typedlambda expression is an argument to an overloaded method, a methodsignature that avoids boxing or unboxing the lambda result ispreferred by the most specific check(§15.12.2.5).
+
+If the body of a lambda is a statement expression(that is, an expression that would be allowed to stand alone as astatement), it is compatible with a void-producing function type;any result is simply discarded. So, for example, both of the followingare legal:
+// Predicate has a boolean result
+java.util.function.Predicate<String> p = s -> list.add(s);
+// Consumer has a void result
+java.util.function.Consumer<String> c = s -> list.add(s);
+
+
+Generally speaking, a lambda of the form () -> expr,where expr is a statement expression, isinterpreted as either () -> { return expr; } or () -> { expr; }, dependingon the target type.
+
+
+
+
+
+15.27.4. Run-Time Evaluation of Lambda Expressions
+
+At runtime, evaluation of a lambda expression is similar to evaluation of aclass instance creation expression, insofar as normal completionproduces a reference to an object. Evaluation of a lambda expressionis distinct from execution of the lambda body.
+
+Eithera new instance of a class with the properties below is allocated andinitialized, or an existing instance of a class with the propertiesbelow is referenced. If a new instance is to be created, but there isinsufficient space to allocate the object, evaluation of the lambdaexpression completes abruptly by throwing an OutOfMemoryError.
+
+This implies that the identity of the result of evaluating a lambdaexpression (or, of serializing and deserializing a lambda expression)is unpredictable, and therefore identity-sensitive operations (such asreference equality (§15.21.3), object locking(§14.19), and the System.identityHashCode method) may producedifferent results in different implementations of the Java programming language, oreven upon different lambda expression evaluations in the sameimplementation.
+
+Thevalue of a lambda expression is a reference to an instance of a classwith the following properties:
+
+
+•The class implements the targeted functional interface type and,if the target type is an intersection type, every otherinterface type mentioned in the intersection.
+
+
+•Where the lambda expression has type U, for each non-staticmember method m of U:
+
+If the function type of U has a subsignature of the signatureof m, then the class declares a method that overrides m. Themethod's body has the effect of evaluating the lambda body, ifit is an expression, or of executing the lambda body, if it is ablock; if a result is expected, it is returned from themethod.
+
+If the erasure of the type of a method being overridden differsin its signature from the erasure of the function type of U,then before evaluating or executing the lambda body, themethod's body checks that each argument value is an instance ofa subclass or subinterface of the erasure of the correspondingparameter type in the function type of U; if not, a ClassCastException isthrown.
+
+
+•The class overrides no other methods of the targeted functionalinterface type or other interface types mentioned above,although it may override methods of the Object class.
+
+
+These rules are meant to offer flexibility toimplementations of the Java programming language, in that:
+
+
+•A new object need not be allocated on everyevaluation.
+
+
+•Objects produced by different lambda expressionsneed not belong to different classes (if the bodies areidentical, for example).
+
+
+•Every object produced by evaluation need notbelong to the same class (captured local variables might beinlined, for example).
+
+
+•If an "existing instance" is available, it neednot have been created at a previous lambda evaluation (it mighthave been allocated during the enclosing class's initialization,for example).
+
+
+If the targeted functional interface type is asubtype of java.io.Serializable, the resulting object will automatically bean instance of a serializable class. Making an object derived from alambda expression serializable can have extra run time overhead andsecurity implications, so lambda-derived objects are not required tobe serializable "by default".

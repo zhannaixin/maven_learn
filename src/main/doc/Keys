@@ -1,0 +1,5 @@
+在eclipse中alt+shit+a就可以选中一列了,
+在网上很多的idea中列编辑的使用,alt+capslk(大小写切换)+鼠标左键
+如果idea会一直在列编辑状态，可以鼠标右键，把column selection mode 前面的对勾取消就可以了
+
+
