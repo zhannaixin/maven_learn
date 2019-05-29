@@ -8,6 +8,10 @@
       </list>
     </option>
   </component>
+  <component name="ProjectResources">
+    <resource url="hibernate-mapping-4.0" location="E:/Share/SOFTWARE/hibernate-mapping-4.0.xsd" />
+    <resource url="http://www.hibernate.org/dtd/hibernate-configuration-4.0.xsd" location="E:/Share/SOFTWARE/hibernate-configuration-4.0.xsd" />
+  </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="false" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
