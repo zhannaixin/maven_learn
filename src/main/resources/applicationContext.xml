@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/jdbc
+    http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+    http://www.springframework.org/schema/cache
+    http://www.springframework.org/schema/cache/spring-cache-3.1.xsd
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util.xsd">
+
+
+    <!-- 以下为引用外部属性文件示例 -->
+    <!-- 引用外部属性文件 -->
+    <context:property-placeholder location="classpath:db.properties"/>
+
+    <!-- 数据源01 -->
+    <bean id="dataSource01" class="com.spring.entity.DataSourceConfig">
+        <property name="properties">
+            <props>
+                <prop key="user">${user}</prop>
+                <prop key="password">${password}</prop>
+                <prop key="jdbcUrl">${jdbcUrl}</prop>
+                <prop key="driverClass">${driverClass}</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- 数据源02 -->
+    <bean id="dataSource02" class="com.spring.entity.DataSourceConfig">
+        <property name="properties">
+            <props>
+                <prop key="user">root</prop>
+                <prop key="password">123456</prop>
+                <prop key="jdbcUrl">jdbc:mysql:///test</prop>
+                <prop key="driverClass">com.mysql.jdbc.Driver</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!-- 以下为处理器示例 -->
+    <!-- 类似拦截器，可以在初始化前后完成一些检查工作 -->
+    <bean class="com.spring.beans.processor.MyBeanPostProcessor"/>
+
+    <!-- 以下为一般bean示例 -->
+    <!-- scope设置为prototype，只在请求时实例化bean，destroy方法不会被调用   -->
+    <!--    <bean id="helloWorld00" class="com.atguigu.spring.beans.HelloWorld" scope="prototype" init-method="init" destroy-method="destroy">-->
+
+    <!-- 通过set方法注入 -->
+    <bean id="helloWorld01" class="com.spring.beans.xml.HelloWorld">
+        <property name="who" value="Spring"/>
+    </bean>
+
+    <!-- 通过构造函数注入 -->
+    <bean id="helloWorld02" class="com.spring.beans.xml.HelloWorld">
+        <constructor-arg value="World"/>
+    </bean>
+
+    <!-- 通过构造函数注入，指定参数位置及类型 -->
+    <bean class="com.spring.entity.Car" id="car01">
+        <constructor-arg value="Audi" index="0"/>
+        <constructor-arg value="Shanghai" index="1"/>
+        <constructor-arg value="300001" type="double"/>
+        <property name="tyrePerimeter" value="#{T(java.lang.Math).PI * 80}"/>
+    </bean>
+
+    <!-- 通过构造函数注入，没有指定参数位置及类型，发生混淆 -->
+    <bean class="com.spring.entity.Car" id="car02">
+        <constructor-arg value="Audi"/>
+        <constructor-arg value="Shanghai"/>
+        <constructor-arg value="300001"/>
+        <property name="tyrePerimeter" value="#{T(java.lang.Math).PI * 80}"/>
+    </bean>
+
+    <!-- 通过构造函数注入，指定参数位置及类型，包含特殊字符 -->
+    <bean class="com.spring.entity.Car" id="car03">
+        <constructor-arg value="BMW" index="0" type="java.lang.String"/>
+        <constructor-arg index="2" type="int" value="250"/>
+        <constructor-arg index="1" type="java.lang.String">
+            <value><![CDATA[<Shanghai^>]]></value>
+        </constructor-arg>
+    </bean>
+
+    <!-- 通过静态工厂方法配置bean -->
+    <bean id="car04" class="com.spring.beans.factory.StaticCarFactory" factory-method="getCar">
+        <constructor-arg value="bmw"/>
+    </bean>
+
+    <!-- 通过实例工厂方法配置bean -->
+    <bean id="instanceCarFactory" class="com.spring.beans.factory.InstanceCarFactory"/>
+    <bean id="car05" factory-bean="instanceCarFactory" factory-method="getCar">
+        <constructor-arg value="bmw"/>
+    </bean>
+
+    <!-- 通过工厂bean配置bean -->
+    <bean id="car06" class="com.spring.beans.factory.CarFactoryBean"/>
+
+    <!-- bean列表 -->
+    <util:list id="cars">
+        <ref bean="car01"/>
+        <ref bean="car06"/>
+    </util:list>
+
+    <!-- 可以通过引用、匿名bean为成员对象赋值，级联赋值示例 -->
+    <bean id="persion01" class="com.spring.entity.Persion">
+        <property name="name" value="Tom"/>
+        <property name="age" value="24"/>
+        <!--        <property name="car" ref="car2"/>-->
+        <property name="car">
+            <!--            <ref bean="car2"/>-->
+            <bean class="com.spring.entity.Car">
+                <constructor-arg value="Ford" index="0"/>
+                <constructor-arg value="Changan" index="1"/>
+                <constructor-arg value="200000" type="double"/>
+            </bean>
+        </property>
+        <property name="car.maxSpeed" value="300"/>
+    </bean>
+
+    <!-- null对象使用、列表赋值，SpEL字面值 -->
+    <bean id="persion02" class="com.spring.entity.Persion">
+        <constructor-arg value="#{'Mike'}"/>
+        <constructor-arg value="27"/>
+        <constructor-arg name="car">
+            <null/>
+        </constructor-arg>
+        <property name="cars">
+            <list>
+                <ref bean="car01"/>
+                <ref bean="car02"/>
+                <bean class="com.spring.entity.Car">
+                    <constructor-arg value="Ford" index="0"/>
+                    <constructor-arg value="Changan" index="1"/>
+                    <constructor-arg value="200000" type="double"/>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <!-- 使用p标签、SpEL创建bean，含引用、常量 -->
+    <bean id="persion03" class="com.spring.entity.Persion" p:car-ref="car06" p:name="#{'Jack'}" p:age="29"
+          p:address-ref="address01" p:city="#{address01.city}" p:level="#{car06.price > 300000 ? '金领' : '银领'}"
+          autowire="byName" depends-on="car03">
+        <property name="cars" value="#{cars}"/>
+    </bean>
+
+    <!-- autowire="byType" 声明中必须只包含唯一类型的bean，如此处没有指定‘p:car-ref="car04"’则会报错 -->
+    <bean id="persion04" class="com.spring.entity.Persion" p:age="31" p:name="Kate" autowire="byType"
+          p:car-ref="car04"/>
+
+    <!-- 可以将abstract设置为true，作为模板，此时可以不指定class（如果不指定class，则必须声明为abstract="true"） -->
+    <!-- bean的继承，可以忽略父bean的class设置，让子类指定自己的类，只是共享相同的属性配置 -->
+    <bean id="address00" p:city="Beijing" p:street="Wudaokou" abstract="true"/>
+    <bean id="address01" class="com.spring.entity.Address" parent="address00" p:street="Dazhongsi" scope="singleton"
+          abstract="false"/>
+
+    <!-- 以下为注解需要的配置，扫描的包 -->
+    <!-- 可以使用过滤器resource-pattern="repository/*.class"
+     设置use-default-filters="false"会只扫描context:exclude-filter、context:include-filter内容-->
+    <context:component-scan base-package="com.spring.beans">
+        <!-- <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Repository"/>-->
+        <!-- <context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/>-->
+        <!-- <context:exclude-filter type="assignable" expression="com.atguigu.spring.beans.annotation.repository.UserRepository"/>-->
+        <!-- <context:include-filter type="assignable" expression="com.atguigu.spring.beans.annotation.repository.UserRepository"/>-->
+    </context:component-scan>
+    <context:component-scan base-package="com.spring.aop"/>
+    <context:component-scan base-package="com.spring.jdbc"/>
+
+    <!-- 启用面向切面编程的配置，注解有这条配置就可以了 -->
+    <aop:aspectj-autoproxy/>
+
+    <!-- 面向切面编程的配置，使用XML配置示例 -->
+    <bean id="arithmeticCalculatorXml" class="com.spring.aop.xml.ArithmeticCalculatorImpl"/>
+    <bean id="loggingAspectXml" class="com.spring.aop.xml.LoggingAspect"/>
+    <bean id="validationAspectXml" class="com.spring.aop.xml.ValidationAspect"/>
+    <aop:config>
+        <aop:pointcut id="pointcut" expression="execution(* com.spring.aop.xml.ArithmeticCalculatorImpl.*(..))"/>
+        <aop:aspect ref="loggingAspectXml" order="2">
+            <aop:before method="beforeMethod" pointcut-ref="pointcut"/>
+            <aop:after method="afterMethod" pointcut-ref="pointcut"/>
+            <aop:after-returning method="afterReturning" pointcut-ref="pointcut" returning="result"/>
+            <aop:after-throwing method="afterThrowing" pointcut-ref="pointcut" throwing="ex"/>
+            <aop:around method="aroundMethod" pointcut-ref="pointcut"/>
+        </aop:aspect>
+        <aop:aspect ref="validationAspectXml" order="1">
+            <aop:before method="validateArgs" pointcut-ref="pointcut"/>
+        </aop:aspect>
+    </aop:config>
+
+    <!-- 以下为SpringJDBC相关配置 -->
+    <bean id="dataSourceMariaDB" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+          destroy-method="close">
+        <property name="driverClass" value="${driverClass}"/>
+        <property name="jdbcUrl" value="${jdbcUrl}"/>
+        <property name="user" value="${user}"/>
+        <property name="password" value="${password}"/>
+        <property name="initialPoolSize" value="${initialPoolSize}"/>
+        <property name="maxPoolSize" value="${maxPoolSize}"/>
+        <property name="minPoolSize" value="${initialPoolSize}"/>
+        <property name="maxIdleTime" value="${maxIdleTime}"/>
+    </bean>
+
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <property name="dataSource" ref="dataSourceMariaDB"/>
+    </bean>
+
+    <bean id="namedParameterJdbcTemplate" class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+        <constructor-arg name="dataSource" ref="dataSourceMariaDB"/>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSourceMariaDB"/>
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="purchase" propagation="REQUIRES_NEW"/>
+            <tx:method name="get*" read-only="true"/>
+            <tx:method name="find*" read-only="true"/>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <aop:pointcut id="bookShopServicePointCut" expression="execution(* com.spring.jdbc.*.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="bookShopServicePointCut"/>
+    </aop:config>
+
+    <bean id="bookShopDaoXml" class="com.spring.jdbc.xml.BookShopDaoImpl">
+        <property name="jdbcTemplate" ref="jdbcTemplate"/>
+    </bean>
+
+    <bean id="bookShopServiceXml" class="com.spring.jdbc.xml.BookShopServiceImpl">
+        <property name="bookShopDao" ref="bookShopDaoXml"/>
+    </bean>
+
+    <bean id="cashierXml" class="com.spring.jdbc.xml.CashierImpl">
+        <property name="bookShopService" ref="bookShopServiceXml"/>
+    </bean>
+</beans>
