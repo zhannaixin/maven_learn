@@ -1,0 +1,49 @@
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.spring.entity">
+    <!-- 标识一个类的xml映射,name为类名,table为表名 -->
+    <class name="com.spring.entity.Account" table="Shaccount">
+        <!-- 主键的设置,generator标识主键生成方式,因为native便于数据库的移植所以.嘿嘿!你懂的 -->
+        <id name="id" type="int">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <!-- 这里配了该类一个属性用户名 name属性字段,column,数据库对应列 -->
+        <property name="userName" type="string" column="USER_NAME"/>
+
+        <!-- 余额，这里同上,写法不同而已 -->
+        <property name="balance" type="java.math.BigDecimal">
+            <column name="BALANCE"/>
+        </property>
+        <!-- 下面同样是配该类一个属性,只是比较特殊而已! DisrtictId它是对应实体（数据库中主键，hibernate有缺省）如果加property-ref=DistrictId，效果是一样！此属性用在有联合主键的时候-->
+<!--        <many-to-one name="district" class="District">-->
+<!--            <column name="DistrictId"/>-->
+<!--        </many-to-one>-->
+    </class>
+</hibernate-mapping>
+
+<!--        //当column不指定的时候默认是和name相同-->
+
+<!--        //这里简单介绍,<property>简单类型的配置标签,-->
+<!--<many-to-one>多对一的配置标签,以此xml为例,需要注意的是该xml是一个街道的实体映射,也就是说一个区可以包含多个街道,所以这里街道配置了和区的多对一关系!-->
+<!--    //name="district";这个仍然代表该类字段,不同的是class="District",他的类型没有用type,而是class!因为不是一个简单数据类型.-->
+
+<!--    //这个只是一个多对一的简单表述,其实一对一,多对多...等!道理是一样的-->
+
+<!--    //District.hbm.xml-->
+
+<!--    <!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"-->
+<!--    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">-->
+<!--    <hibernate-mapping package="com.aegop.mto.pojo">-->
+<!--        <class name="District" table="Districts">-->
+<!--            <id name="id" type="int">-->
+<!--                <column name="Id"/>-->
+<!--                <generator class="native"/>-->
+<!--            </id>-->
+<!--            <property name="districtName" type="string">-->
+<!--                <column name="DistrictName"/>-->
+<!--            </property>-->
+
+<!--        </class>-->
+<!--    </hibernate-mapping>-->

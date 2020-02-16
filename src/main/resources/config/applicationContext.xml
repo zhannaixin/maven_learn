@@ -1,11 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:context="http://www.springframework.org/schema/context"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans
-		http://www.springframework.org/schema/beans/spring-beans-3.1.xsd 
-		http://www.springframework.org/schema/context
-		http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:aop="http://www.springframework.org/schema/aop"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:p="http://www.springframework.org/schema/p"
+	   xmlns:util="http://www.springframework.org/schema/util"
+	   xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	   xmlns:cache="http://www.springframework.org/schema/cache"
+	   xsi:schemaLocation="
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/jdbc
+    http://www.springframework.org/schema/jdbc/spring-jdbc-3.1.xsd
+    http://www.springframework.org/schema/cache
+    http://www.springframework.org/schema/cache/spring-cache-3.1.xsd
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util.xsd">
 
 	<!-- 无参构造，set方法注入 -->
 	<bean id="helloWorld1" class="spring.bean.HelloWorld">
@@ -16,7 +33,66 @@
 	<bean id="helloWorld2" class="spring.bean.HelloWorld">
 		<constructor-arg value="Hello Spring!" type="java.lang.String" index="0"/>
 	</bean>
-	
-	
+
+
+	<!-- 以下为引用外部属性文件示例 -->
+	<!-- 引用外部属性文件 -->
+	<context:property-placeholder location="classpath:db.properties"/>
+
+	<!-- 以下为SpringJDBC相关配置 -->
+	<bean id="dataSourceMariaDB" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		  destroy-method="close">
+		<property name="driverClass" value="${driverClass}"/>
+		<property name="jdbcUrl" value="${jdbcUrl}"/>
+		<property name="user" value="${user}"/>
+		<property name="password" value="${password}"/>
+		<property name="initialPoolSize" value="${initialPoolSize}"/>
+		<property name="maxPoolSize" value="${maxPoolSize}"/>
+		<property name="minPoolSize" value="${initialPoolSize}"/>
+		<property name="maxIdleTime" value="${maxIdleTime}"/>
+	</bean>
+
+
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSourceMariaDB"/>
+
+		<!--        <property name="configLocation" value="classpath:hibernate.cfg.xml"/>-->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MariaDBDialect</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+		<property name="mappingLocations" value="classpath:hbm/*.hbm.xml"/>
+	</bean>
+
+	<bean id="hibernateTransactionManager" class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+
+	<tx:advice id="hibernateTxAdvice" transaction-manager="hibernateTransactionManager">
+		<tx:attributes>
+			<tx:method name="list*" propagation="SUPPORTS" read-only="true"/>
+			<tx:method name="save*" propagation="REQUIRED"/>
+			<tx:method name="delete*" propagation="REQUIRED"/>
+			<tx:method name="insert*" propagation="REQUIRED"/>
+			<tx:method name="update*" propagation="REQUIRED"/>
+			<tx:method name="purchase*" propagation="REQUIRES_NEW"/>
+			<tx:method name="checkout*" propagation="REQUIRED"/>
+			<tx:method name="get*" read-only="true"/>
+			<tx:method name="find*" read-only="true"/>
+			<tx:method name="*"/>
+		</tx:attributes>
+	</tx:advice>
+
+	<aop:config>
+		<aop:pointcut id="hibernateImplTxPointcut" expression="execution(* com.spring.hibernate.*.impl.*(..))"/>
+		<aop:pointcut id="hibernateInterfaceTxPointcut" expression="execution(* com.spring.jdbc.*.*(..))"/>
+		<aop:advisor advice-ref="hibernateTxAdvice" pointcut-ref="hibernateInterfaceTxPointcut"/>
+	</aop:config>
+
+	<context:component-scan base-package="com.spring.hibernate"/>
 
 </beans>

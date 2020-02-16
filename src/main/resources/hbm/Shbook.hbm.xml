@@ -1,0 +1,26 @@
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping package="com.spring.entity">
+    <!-- 标识一个类的xml映射,name为类名,table为表名 -->
+    <class name="com.spring.entity.Book" table="Shbook">
+        <!-- 主键的设置,generator标识主键生成方式,因为native便于数据库的移植所以.嘿嘿!你懂的 -->
+        <id name="id" type="int">
+            <column name="ID"/>
+            <generator class="native"/>
+        </id>
+
+        <!-- 这里配了该类一个属性书名 name属性字段,column,数据库对应列 -->
+        <property name="bookName" type="string" column="BOOK_NAME"/>
+
+        <!-- 这里配了该类一个属性书号 name属性字段,column,数据库对应列 -->
+        <property name="isbn" type="string" column="ISBN"/>
+
+        <!-- 单价，这里同上,写法不同而已 -->
+        <property name="price" type="java.math.BigDecimal">
+            <column name="PRICE"/>
+        </property>
+
+        <!-- 这里配了该类一个属性库存 name属性字段,column,数据库对应列 -->
+        <property name="stock" type="int" column="STOCK"/>
+    </class>
+</hibernate-mapping>
