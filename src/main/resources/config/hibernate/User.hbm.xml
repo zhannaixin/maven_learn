@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd" >
+<hibernate-mapping>
+    <!-- 配置映射关系，将类与表进行映射 -->
+    <class name="hibernate.dao.User" table="user" dynamic-insert="true" dynamic-update="true">
+        <!-- 将列和属性映射 -->
+        <!--
+            name:指的是类中的属性，准备的来说是属性的set方法
+            column:指的是表中的列，也可以使用<column>子元素来指定
+         -->
+        <id name="id" column="id">
+            <!-- <column name="id"></column>  -->
+            <!--
+                配置主键的生成策略，不同的数据库主键生成方式有所不同
+                    mysql：自增长 auto_increment
+                    oracle：序列 sequence
+                    sql server：自增长 identity
+                具体的生成策略，详见文档 5.1.4.1 Generator，常用的如下：
+                    native：hibernate根据数据库自动的选择主键生成策略
+                            mysql：自增长
+                            oracle：序列，hibernate会自动创建序列hibernate_sequence，但只会创建一个，多表共用，从而导致主键不连续
+                    increment：自增长，适应于mysql和sql server
+                            也可以为oracle设置自增长，增长方式如下：
+                                先查询要插入表的主键的最大值，将该最大主键值+1，然后将新值作为要插入记录的主键值
+                    sequence：序列，适应于oracle
+                            需要指定序列的名称，也就是在oracle中创建的序列
+                            如果不指定，则默认使用hibernate自动创建的序列
+                    assigned：由用户自己指定主键
+                    uuid：使用uuid算法，生成唯一的uuid
+             -->
+            <generator class="native"/>
+            <!-- <generator class="sequence">
+                <param name="sequence">seq_user</param>
+            </generator> -->
+        </id>
+
+        <!-- 其他属性 -->
+        <property name="username" column="name"/>
+        <property name="password" column="pwd"/>
+        <!-- <property name="password" column="pwd" update="false" insert="false"></property> -->
+        <property name="age" column="age"/>
+
+
+        <!--
+            该属性不对应数据库表中的某列，对应的是sql查询的结果
+         -->
+        <property name="count" formula="(select count(u.id) from user u)"/>
+    </class>
+
+    <!-- HQL语句的命名查询 -->
+    <query name="login">
+        <![CDATA[
+			from User where username=:username and password=:password
+		]]>
+    </query>
+    <!-- SQL语句的命名查询 -->
+    <sql-query name="login2">
+        <![CDATA[
+			select * from user where name=:name and pwd=:pwd
+		]]>
+        <!-- <return class="day01.User"></return> -->
+    </sql-query>
+</hibernate-mapping>
