@@ -31,6 +31,7 @@ public class HelloWorld {
     }
 
     public void init(){
+        System.out.println(this);
         System.out.println("Initing ...!");
 
     }

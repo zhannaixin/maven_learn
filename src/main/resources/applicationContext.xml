@@ -61,14 +61,21 @@
     <!-- scope设置为prototype，只在请求时实例化bean，destroy方法不会被调用   -->
     <!--    <bean id="helloWorld00" class="com.atguigu.spring.beans.HelloWorld" scope="prototype" init-method="init" destroy-method="destroy">-->
 
-    <!-- 通过set方法注入 -->
-    <bean id="helloWorld01" class="com.spring.beans.xml.HelloWorld">
+
+    <!-- 通过set方法注入，init-method是在注入之后才执行的 -->
+    <bean id="helloWorld01" class="com.spring.beans.xml.HelloWorld" init-method="init" destroy-method="destroy">
         <property name="who" value="Spring"/>
     </bean>
 
     <!-- 通过构造函数注入 -->
     <bean id="helloWorld02" class="com.spring.beans.xml.HelloWorld">
         <constructor-arg value="World"/>
+    </bean>
+
+    <bean id="currentTime" class="com.spring.beans.xml.CurrentTime" scope="prototype"/>
+    <bean id="lookUpBean" class="com.spring.beans.xml.LookUpBean" scope="singleton">
+        <lookup-method bean="currentTime" name="createCurrentTime"/>
+        <property name="currentTime" ref="currentTime"/>
     </bean>
 
     <!-- 通过构造函数注入，指定参数位置及类型 -->

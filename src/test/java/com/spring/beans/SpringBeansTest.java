@@ -2,6 +2,7 @@ package com.spring.beans;
 
 import com.spring.beans.Controller;
 import com.spring.beans.xml.HelloWorld;
+import com.spring.beans.xml.LookUpBean;
 import com.spring.entity.Car;
 import com.spring.entity.DataSourceConfig;
 import com.spring.entity.Persion;
@@ -19,6 +20,18 @@ public class SpringBeansTest {
         hw.say();
         hw = ctx.getBean("helloWorld02", HelloWorld.class);
         hw.say();
+    }
+
+    @Test
+    public void testLookUpBean() throws InterruptedException {
+        LookUpBean lookUpBean = ctx.getBean("lookUpBean", LookUpBean.class);
+        System.out.println(lookUpBean.getCurrentTime());
+        System.out.println(lookUpBean.createCurrentTime());
+
+        Thread.sleep(2000);
+
+        System.out.println(lookUpBean.getCurrentTime());
+        System.out.println(lookUpBean.createCurrentTime());
     }
 
     @Test
